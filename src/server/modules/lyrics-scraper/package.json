@@ -1,0 +1,22 @@
+{
+    "name": "lyrics-scraper",
+    "version": "1.0.0",
+    "description": "Lyrics scraper",
+    "main": "src/index.ts",
+    "scripts": {
+        "dev": "ts-node test.ts"
+    },
+    "keywords": [],
+    "author": "Daniel Wijaya",
+    "license": "ISC",
+    "dependencies": {
+        "cheerio": "^1.0.0-rc.12",
+        "puppeteer": "^19.4.1"
+    },
+    "devDependencies": {
+        "@types/cheerio": "^0.22.31",
+        "@types/node": "^18.11.17",
+        "@types/puppeteer": "^7.0.4",
+        "ts-node": "^10.9.1"
+    }
+}
