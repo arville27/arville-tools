@@ -1,0 +1,10 @@
+version: "3"
+
+services:
+  arville-tools:
+    container_name: arville-tools
+    image: arville27/arville-tools:dev
+    build: .
+    ports:
+      - 3000:3000
+    restart: always
