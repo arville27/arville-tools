@@ -103,6 +103,7 @@ export default function LogbookEditComponent() {
       <p className="mb-4 block text-center text-2xl font-bold">Edit logbook</p>
       <div className="flex w-[22rem] flex-col gap-4 rounded-xl bg-base-100 shadow-sm md:w-[30rem]">
         <div className="w-full rounded-t-xl bg-base-200 p-4">
+          <div className="text-lg font-bold">{format(dateFilled, "eeee")}</div>
           <div className="text-lg font-bold">
             {format(dateFilled, "dd MMMM yyyy")}
           </div>

@@ -33,9 +33,8 @@ const LogbookDailyCard: React.FC<DailyCardProps> = (props) => {
     >
       <div className="flex w-full items-center justify-between rounded-t-xl bg-base-200 p-4">
         <div>
-          <div className="text-lg font-bold">
-            {format(dateFilled, "eeee, dd MMMM yyyy")}
-          </div>
+          <div className="font-bold">{format(dateFilled, "eeee")}</div>
+          <div className="font-bold">{format(dateFilled, "dd MMMM yyyy")}</div>
           <span className="text-sm text-base-content/80">
             {props.dateFilled}
           </span>
