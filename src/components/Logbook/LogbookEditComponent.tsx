@@ -12,7 +12,7 @@ export default function LogbookEditComponent() {
     success: boolean;
     message: string;
   } | null>(null);
-  const [errors, setErrrors] = useState<{
+  const [errors, setErrors] = useState<{
     clock: string;
     activity: string;
     description: string;
@@ -27,6 +27,7 @@ export default function LogbookEditComponent() {
   const setCurrentLogbook = useLogbookStateStore(
     (state) => state.setCurrentLogbook
   );
+  const [isOffEntry, setIsOffEntry] = useState(false);
 
   if (!jwt) {
     setCurrentLogbook(null);
@@ -43,11 +44,11 @@ export default function LogbookEditComponent() {
 
   const [clockInHour, clockInMinute] = currentLogbook.clockIn
     .split(":")
-    .map(parseInt);
+    .map((n) => parseInt(n));
 
   const [clockOutHour, clockOutMinute] = currentLogbook.clockOut
     .split(":")
-    .map(parseInt);
+    .map((n) => parseInt(n));
 
   const clockIn = new Time(clockInHour, clockInMinute);
   const clockOut = new Time(clockOutHour, clockOutMinute);
@@ -65,18 +66,18 @@ export default function LogbookEditComponent() {
 
     let isError = false;
     if (currentLogbook.activity.length <= 1) {
-      setErrrors((v) => ({ ...v, activity: "Activity cannot be empty" }));
+      setErrors((v) => ({ ...v, activity: "Activity cannot be empty" }));
       isError = true;
     }
     if (currentLogbook.description.length <= 1) {
-      setErrrors((v) => ({ ...v, description: "Description cannot be empty" }));
+      setErrors((v) => ({ ...v, description: "Description cannot be empty" }));
       isError = true;
     }
     if (
-      currentLogbook.clockIn.length != 5 ||
-      currentLogbook.clockOut.length != 5
+      currentLogbook.clockIn.length == 0 ||
+      currentLogbook.clockOut.length == 0
     ) {
-      setErrrors((v) => ({
+      setErrors((v) => ({
         ...v,
         clock: "Clock in and clock out cannot be empty",
       }));
@@ -85,7 +86,18 @@ export default function LogbookEditComponent() {
 
     if (isError) return;
 
-    setErrrors({ activity: "", clock: "", description: "" });
+    setErrors({ activity: "", clock: "", description: "" });
+
+    if (isOffEntry) {
+      setCurrentLogbook({
+        ...currentLogbook,
+        activity: "OFF",
+        description: "OFF",
+        clockIn: "OFF",
+        clockOut: "OFF",
+      });
+    }
+
     const resp = await updateLogbook.mutateAsync({
       jwt,
       logbookData: currentLogbook,
@@ -112,12 +124,23 @@ export default function LogbookEditComponent() {
           </span>
         </div>
         <div className="flex flex-col gap-4 px-4 pb-4">
+          <div className="flex-start form-control flex">
+            <label className="flex cursor-pointer items-center gap-3">
+              <span className="label-text">Set this log book entry to OFF</span>
+              <input
+                type="checkbox"
+                className="checkbox-primary checkbox"
+                onChange={(e) => setIsOffEntry(e.target.checked)}
+              />
+            </label>
+          </div>
           <div className="form-control">
             <label className="label" htmlFor="activity">
               <div className="label-text font-bold">Activity</div>
             </label>
             <textarea
               id="activity"
+              disabled={isOffEntry}
               className={`textarea-bordered textarea-secondary textarea h-24 ${
                 errors && errors.activity.length > 0 ? "border-error" : ""
               }`}
@@ -141,6 +164,7 @@ export default function LogbookEditComponent() {
             </label>
             <textarea
               id="description"
+              disabled={isOffEntry}
               className={`textarea-bordered textarea-secondary textarea h-24 ${
                 errors && errors.description.length > 0 ? "border-error" : ""
               }`}
@@ -173,6 +197,7 @@ export default function LogbookEditComponent() {
             <div className="flex items-center gap-3">
               <TimeField
                 label="clockIn"
+                isDisabled={isOffEntry}
                 defaultValue={clockIn}
                 onChange={(time) =>
                   setCurrentLogbook({
@@ -180,12 +205,13 @@ export default function LogbookEditComponent() {
                     clockIn: convertTimeToString(time),
                   })
                 }
-                locale="en-us"
+                locale="en-US"
                 hourCycle={24}
               />
               <span>-</span>
               <TimeField
                 label="clockOut"
+                isDisabled={isOffEntry}
                 defaultValue={clockOut}
                 onChange={(time) =>
                   setCurrentLogbook({
@@ -193,7 +219,7 @@ export default function LogbookEditComponent() {
                     clockOut: convertTimeToString(time),
                   })
                 }
-                locale="en-us"
+                locale="en-US"
                 hourCycle={24}
               />
             </div>

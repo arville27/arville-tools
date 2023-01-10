@@ -3,6 +3,8 @@ import { trpc } from "../../utils/trpc";
 import useLogbookStateStore from "./useLogbookStore";
 import { format, parse } from "date-fns";
 import { z } from "zod";
+import ListBoxComponent from "../Listbox/ListboxComponent";
+import { dropdownContent, useListboxStore } from "../Listbox/useListBoxStore";
 
 type DailyCardProps = {
   uid: string;
@@ -74,6 +76,8 @@ const LogbookListComponent: React.FC<Props> = ({ onDailyLogbookCardClick }) => {
     (state) => state.setCurrentLogbook
   );
 
+  const selectedMonth = useListboxStore((state) => state.selectedMonth);
+
   const logbookData = trpc.logbook.getLogbookData.useQuery(
     { jwt },
     { enabled: Boolean(jwt) }
@@ -95,42 +99,24 @@ const LogbookListComponent: React.FC<Props> = ({ onDailyLogbookCardClick }) => {
   } else {
     if (logbookData.data.success) {
       content = (
-        <div>
-          {/* <div className="relative">
-            <Example />
-          </div> */}
-          <div>
-            {(logbookData.data.data as z.infer<typeof logbookPerMonth>[])
-              .slice(-1)
-              .map((logbookMonth, index) => (
-                <div className="flex flex-col items-center" key={index}>
-                  <p className="mb-4 text-2xl font-bold">
-                    {format(
-                      parse(
-                        `${logbookMonth.month} - ${logbookMonth.year}`,
-                        "M - yyyy",
-                        new Date()
-                      ),
-                      "MMMM yyyy"
-                    )}
-                  </p>
-                  <div className="mb-10 flex flex-col gap-3 lg:grid lg:grid-cols-2">
-                    {logbookMonth.log_book_month_details.map((dailyLogbook) => (
-                      <LogbookDailyCard
-                        onClick={onDailyLogbookCardClick}
-                        key={dailyLogbook.uid}
-                        uid={dailyLogbook.uid}
-                        activity={dailyLogbook.activity}
-                        clockIn={dailyLogbook.clock_in}
-                        clockOut={dailyLogbook.clock_out}
-                        dateFilled={dailyLogbook.date_filled}
-                        description={dailyLogbook.description}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-          </div>
+        <div className="flex flex-col items-center gap-3">
+          <ListBoxComponent />
+          {(
+            logbookData.data.data.at(selectedMonth) as z.infer<
+              typeof logbookPerMonth
+            >
+          ).log_book_month_details.map((dailyLogbook) => (
+            <LogbookDailyCard
+              onClick={onDailyLogbookCardClick}
+              key={dailyLogbook.uid}
+              uid={dailyLogbook.uid}
+              activity={dailyLogbook.activity}
+              clockIn={dailyLogbook.clock_in}
+              clockOut={dailyLogbook.clock_out}
+              dateFilled={dailyLogbook.date_filled}
+              description={dailyLogbook.description}
+            />
+          ))}
         </div>
       );
     } else {

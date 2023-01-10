@@ -32,8 +32,8 @@ export const logbookUpdateBodySchema = z.object({
   activity: z.string().min(1),
   description: z.string().min(1),
   uid: z.string(),
-  clockIn: z.string().length(5),
-  clockOut: z.string().length(5),
+  clockIn: z.string().min(3),
+  clockOut: z.string().min(3),
   dateFilled: z.string(),
 });
 

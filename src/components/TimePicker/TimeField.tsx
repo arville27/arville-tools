@@ -25,7 +25,9 @@ const TimeField: React.FC<TimeFieldStateOptions> = (props) => {
       <div
         {...fieldProps}
         ref={ref}
-        className="flex rounded-md border border-secondary bg-base-100 py-1 px-2 focus-within:border-secondary hover:border-secondary focus-within:hover:border-secondary"
+        className={`flex rounded-md py-1 px-2 focus-within:border-secondary hover:border-secondary focus-within:hover:border-secondary ${
+          props.isDisabled ? "bg-base-200" : "border border-secondary"
+        }`}
       >
         {state.segments.map((segment, i) => (
           <DateSegment key={i} segment={segment} state={state} />
