@@ -101,22 +101,24 @@ const LogbookListComponent: React.FC<Props> = ({ onDailyLogbookCardClick }) => {
       content = (
         <div className="flex flex-col items-center gap-3">
           <ListBoxComponent />
-          {(
-            logbookData.data.data.at(selectedMonth) as z.infer<
-              typeof logbookPerMonth
-            >
-          ).log_book_month_details.map((dailyLogbook) => (
-            <LogbookDailyCard
-              onClick={onDailyLogbookCardClick}
-              key={dailyLogbook.uid}
-              uid={dailyLogbook.uid}
-              activity={dailyLogbook.activity}
-              clockIn={dailyLogbook.clock_in}
-              clockOut={dailyLogbook.clock_out}
-              dateFilled={dailyLogbook.date_filled}
-              description={dailyLogbook.description}
-            />
-          ))}
+          <div className="mb-10 flex flex-col gap-3 lg:grid lg:grid-cols-2">
+            {(
+              logbookData.data.data.at(selectedMonth) as z.infer<
+                typeof logbookPerMonth
+              >
+            ).log_book_month_details.map((dailyLogbook) => (
+              <LogbookDailyCard
+                onClick={onDailyLogbookCardClick}
+                key={dailyLogbook.uid}
+                uid={dailyLogbook.uid}
+                activity={dailyLogbook.activity}
+                clockIn={dailyLogbook.clock_in}
+                clockOut={dailyLogbook.clock_out}
+                dateFilled={dailyLogbook.date_filled}
+                description={dailyLogbook.description}
+              />
+            ))}
+          </div>
         </div>
       );
     } else {
