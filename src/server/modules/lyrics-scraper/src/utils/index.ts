@@ -44,21 +44,9 @@ export class SingletonBrowser {
     if (!this.browserInstance) {
       this.browserInstance = await puppeteer.launch({
         args: this.optimizationArgs,
-        headless: false,
+        executablePath: "google-chrome-stable",
       });
     }
     return this.browserInstance;
-    //   switch (process.arch) {
-    //     case "x64":
-    //   return puppeteer.launch({
-    //     ...opt,
-    //     executablePath: "/usr/bin/google-chrome",
-    //   });
-    //     case "arm64":
-    //       return puppeteer.launch({
-    //         ...opt,
-    //         executablePath: "/usr/bin/chromium",
-    //       });
-    //   }
   }
 }

@@ -1,6 +1,6 @@
 import cheerio from "cheerio";
 import { getSources, extractUrl } from "../lib/cse";
-import { LyricSourceSourceEntry, LyricDataEntry } from "../types";
+import { LyricSourceEntry, LyricDataEntry } from "../types";
 
 const isValidSource = (src: cheerio.Root): boolean => {
   // Based on breadcrumb structure, that has "artists"
@@ -66,7 +66,7 @@ const extractInfo = (src: cheerio.Root) => {
 
 export const getResults = async (
   query: string
-): Promise<LyricSourceSourceEntry[]> => {
+): Promise<LyricSourceEntry[]> => {
   const CSE_ID = "5ddc5d24693849251";
   const srcs = await getSources(query, CSE_ID);
 
