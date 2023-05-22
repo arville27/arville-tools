@@ -1,10 +1,11 @@
-import { logbookPerMonth } from "../../server/trpc/routers/logbook";
-import { trpc } from "../../utils/trpc";
-import useLogbookStateStore from "./useLogbookStore";
-import { format, parse } from "date-fns";
-import { z } from "zod";
-import ListBoxComponent from "../Listbox/ListboxComponent";
-import { dropdownContent, useListboxStore } from "../Listbox/useListBoxStore";
+import { format, parse } from 'date-fns';
+import { z } from 'zod';
+import { logbookPerMonth } from '../../server/trpc/routers/logbook';
+import { trpc } from '../../utils/trpc';
+import ListBoxComponent from '../Listbox/ListboxComponent';
+import { useListboxStore } from '../Listbox/useListBoxStore';
+import { Card, CardContent, CardHeader } from '../ui/Card';
+import useLogbookStateStore from './useLogbookStore';
 
 type DailyCardProps = {
   uid: string;
@@ -16,65 +17,60 @@ type DailyCardProps = {
   onClick: (tabIndex: number) => void;
 };
 
-const LogbookDailyCard: React.FC<DailyCardProps> = (props) => {
-  const setCurrentLogbook = useLogbookStateStore(
-    (state) => state.setCurrentLogbook
-  );
+function LogbookDailyCard(props: DailyCardProps) {
+  const setCurrentLogbook = useLogbookStateStore((state) => state.setCurrentLogbook);
 
   const { clockIn, clockOut, activity, description, onClick } = props;
 
-  const dateFilled = parse(props.dateFilled, "yyyy-MM-dd", new Date());
+  const dateFilled = parse(props.dateFilled, 'yyyy-MM-dd', new Date());
 
   return (
-    <button
+    <Card
       onClick={() => {
         setCurrentLogbook(props);
         onClick(2);
       }}
-      className="flex w-[22rem] flex-col justify-start rounded-xl bg-base-100 text-left shadow-sm outline-primary-focus md:w-[30rem]"
-    >
-      <div className="flex w-full items-center justify-between rounded-t-xl bg-base-200 p-4">
-        <div>
-          <div className="font-bold">{format(dateFilled, "eeee")}</div>
-          <div className="font-bold">{format(dateFilled, "dd MMMM yyyy")}</div>
-          <span className="text-sm text-base-content/80">
-            {props.dateFilled}
-          </span>
-        </div>
-        <div className="max-w-fit rounded-full bg-accent py-2 px-4 text-sm font-medium text-accent-content">
-          {clockIn.length == 0 && clockOut.length == 0
-            ? "None"
-            : `${clockIn} - ${clockOut}`}
-        </div>
-      </div>
-      <div className="flex w-full flex-col gap-4 p-4">
-        <div>
-          <div className="mb-1 font-bold">Activity</div>
-          <div className="text-sm">
-            {activity.length == 0 ? "None" : activity}
+      className='flex w-[22rem] cursor-pointer flex-col justify-start rounded-xl text-left md:w-[30rem]'>
+      <CardHeader>
+        <div className='bg-base-200 flex w-full items-center justify-between rounded-t-xl p-4'>
+          <div>
+            <div className='font-bold'>{format(dateFilled, 'eeee')}</div>
+            <div className='font-bold'>{format(dateFilled, 'dd MMMM yyyy')}</div>
+            <span className='text-base-content/80 text-sm'>{props.dateFilled}</span>
+          </div>
+          <div className='text-accent-content max-w-fit rounded-full bg-accent px-4 py-2 text-sm font-medium'>
+            {clockIn.length == 0 && clockOut.length == 0
+              ? 'None'
+              : `${clockIn} - ${clockOut}`}
           </div>
         </div>
-        <div>
-          <div className="mb-1 font-bold">Description</div>
-          <div className="text-sm">
-            {description.length == 0 ? "None" : description}
+      </CardHeader>
+      <CardContent>
+        <div className='flex w-full flex-col gap-4 p-4'>
+          <div>
+            <div className='mb-1 font-bold'>Activity</div>
+            <div className='text-sm'>{activity.length == 0 ? 'None' : activity}</div>
+          </div>
+          <div>
+            <div className='mb-1 font-bold'>Description</div>
+            <div className='text-sm'>
+              {description.length == 0 ? 'None' : description}
+            </div>
           </div>
         </div>
-      </div>
-    </button>
+      </CardContent>
+    </Card>
   );
-};
+}
 
 type Props = {
   onDailyLogbookCardClick: (tabIndex: number) => void;
 };
 
-const LogbookListComponent: React.FC<Props> = ({ onDailyLogbookCardClick }) => {
+export function LogbookListComponent({ onDailyLogbookCardClick }: Props) {
   const jwt = useLogbookStateStore((state) => state.jwt);
   const setJwt = useLogbookStateStore((state) => state.setJwt);
-  const setCurrentLogbook = useLogbookStateStore(
-    (state) => state.setCurrentLogbook
-  );
+  const setCurrentLogbook = useLogbookStateStore((state) => state.setCurrentLogbook);
 
   const selectedMonth = useListboxStore((state) => state.selectedMonth);
 
@@ -90,49 +86,39 @@ const LogbookListComponent: React.FC<Props> = ({ onDailyLogbookCardClick }) => {
 
   let content = null;
 
-  if (!logbookData.data) {
+  if (logbookData.data && logbookData.data.success) {
     content = (
-      <div className="min-w-full py-4">
-        <progress className="progress progress-primary"></progress>
+      <div className='flex flex-col items-center gap-3'>
+        <ListBoxComponent />
+        <div className='mb-10 flex w-full flex-col gap-3 lg:grid lg:grid-cols-2'>
+          {(
+            logbookData.data.data[selectedMonth.monthIndexBinus] as z.infer<
+              typeof logbookPerMonth
+            >
+          ).log_book_month_details.map((dailyLogbook) => (
+            <LogbookDailyCard
+              onClick={onDailyLogbookCardClick}
+              key={dailyLogbook.uid}
+              uid={dailyLogbook.uid}
+              activity={dailyLogbook.activity}
+              clockIn={dailyLogbook.clock_in}
+              clockOut={dailyLogbook.clock_out}
+              dateFilled={dailyLogbook.date_filled}
+              description={dailyLogbook.description}
+            />
+          ))}
+        </div>
       </div>
     );
-  } else {
-    if (logbookData.data.success) {
-      content = (
-        <div className="flex flex-col items-center gap-3">
-          <ListBoxComponent />
-          <div className="mb-10 flex flex-col gap-3 lg:grid lg:grid-cols-2">
-            {(
-              logbookData.data.data.at(selectedMonth) as z.infer<
-                typeof logbookPerMonth
-              >
-            ).log_book_month_details.map((dailyLogbook) => (
-              <LogbookDailyCard
-                onClick={onDailyLogbookCardClick}
-                key={dailyLogbook.uid}
-                uid={dailyLogbook.uid}
-                activity={dailyLogbook.activity}
-                clockIn={dailyLogbook.clock_in}
-                clockOut={dailyLogbook.clock_out}
-                dateFilled={dailyLogbook.date_filled}
-                description={dailyLogbook.description}
-              />
-            ))}
-          </div>
-        </div>
-      );
-    } else {
-      setJwt("");
-      content = (
-        <div className="rounded-lg bg-error py-2 px-4 text-error-content">
-          <p className="font-bold">Error message</p>
-          <p>{logbookData.data.data as string}</p>
-        </div>
-      );
-    }
+  } else if (logbookData.data) {
+    setJwt('');
+    content = (
+      <div className='bg-error text-error-content rounded-lg px-4 py-2'>
+        <p className='font-bold'>Error message</p>
+        <p>{logbookData.data.data as string}</p>
+      </div>
+    );
   }
 
   return content;
-};
-
-export default LogbookListComponent;
+}

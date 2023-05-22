@@ -1,14 +1,28 @@
-import "../styles/globals.css";
-import { trpc } from "../utils/trpc";
-import type { AppProps, AppType } from "next/app";
-import { ThemeProvider } from "next-themes";
+import '@/styles/globals.css';
+import { trpc } from '@/utils/trpc';
+import { Inter } from '@next/font/google';
+import { ThemeProvider } from 'next-themes';
+import type { AppProps } from 'next/app';
 
-const App: AppType = ({ Component, pageProps }: AppProps) => {
+const inter = Inter({
+  display: 'swap',
+  subsets: ['latin'],
+  variable: '--font-inter',
+});
+
+function App({ Component, pageProps }: AppProps) {
   return (
-    <ThemeProvider themes={["dracula", "light"]}>
-      <Component {...pageProps} />
-    </ThemeProvider>
+    <>
+      <style jsx global>{`
+        :root {
+          --font-inter: ${inter.style.fontFamily};
+        }
+      `}</style>
+      <ThemeProvider attribute='class'>
+        <Component {...pageProps} />
+      </ThemeProvider>
+    </>
   );
-};
+}
 
 export default trpc.withTRPC(App);

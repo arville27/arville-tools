@@ -1,10 +1,13 @@
-import Link from "next/link";
-import React, { useState } from "react";
-import useDebounce from "../utils/hooks/useDebounce";
-import { trpc } from "../utils/trpc";
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Skeleton } from '@/components/ui/Skeleton';
+import useDebounce from '@/utils/hooks/useDebounce';
+import { trpc } from '@/utils/trpc';
+import Link from 'next/link';
+import { useState } from 'react';
 
 const LyricsSearchbar = () => {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const debouncedQuery: string = useDebounce<typeof query>(query, 500);
 
   const hello = trpc.lyrics.searchLyrics.useQuery(
@@ -13,35 +16,30 @@ const LyricsSearchbar = () => {
   );
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      <h1 className="pb-12 text-5xl font-bold">Lyrics Finder</h1>
-      <div className="max-w-xl">
-        <input
+    <div className='flex w-full flex-col items-center justify-center px-6'>
+      <div className='w-full sm:w-[36rem]'>
+        <Input
           onChange={(e) => setQuery(e.target.value)}
           value={query}
-          type="text"
-          placeholder="Search by artist or song title"
-          className="input-bordered input-primary input w-64 md:w-[36rem]"
+          type='text'
+          placeholder='Search by artist or song title'
         />
       </div>
       {hello.isLoading && debouncedQuery.length > 0 && (
-        <div className="min-w-full py-4">
-          <progress className="progress progress-primary"></progress>
+        <div className='flex flex-col gap-1 py-4'>
+          <Skeleton className='h-10 w-full sm:w-[36rem]' />
+          <Skeleton className='h-10 w-full sm:w-[36rem]' />
+          <Skeleton className='h-10 w-full sm:w-[36rem]' />
         </div>
       )}
-      <div className="btn-group btn-group-vertical gap-1 py-4">
+      <div className='flex flex-col gap-1 py-4'>
         {hello.data &&
           hello.data.map((entry, i) => (
-            <div key={i} className="w-64 md:w-[36rem]">
-              <Link
-                className="btn min-w-full normal-case"
-                href={`/lyrics-finder/lyrics?url=${encodeURIComponent(
-                  entry.src
-                )}`}
-              >
+            <Link key={i} href={`/lyrics/lyrics?url=${encodeURIComponent(entry.src)}`}>
+              <Button variant='secondary' className='w-full sm:w-[36rem]'>
                 {entry.artist} - {entry.title}
-              </Link>
-            </div>
+              </Button>
+            </Link>
           ))}
       </div>
     </div>
