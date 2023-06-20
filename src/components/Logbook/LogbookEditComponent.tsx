@@ -1,34 +1,55 @@
-import { trpc } from '../../utils/trpc';
-// import TimeField from '../TimePicker/TimeField';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/Card';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { Textarea } from '@/components/ui/Textarea';
+import { useMounted } from '@/utils/hooks/useMounted';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Time } from '@internationalized/date';
+import { Label } from '@radix-ui/react-label';
+import { TimeValue } from '@react-aria/datepicker';
 import { format, parse } from 'date-fns';
-import { FormEvent, useState } from 'react';
-import { Button } from '../ui/Button';
-import { Card, CardContent, CardFooter, CardHeader } from '../ui/Card';
-import { Checkbox } from '../ui/Checkbox';
-import { Label } from '../ui/Label';
-import { Textarea } from '../ui/Textarea';
-import useLogbookStateStore from './useLogbookStore';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { trpc } from '../../utils/trpc';
+import { TimeField } from '../TimePicker/TimeField';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '../ui/Form';
+import { LogbookDataSchema, useLogbookStore } from './useLogbookStore';
+
+const logbookDataFormSchema = z.object({
+  description: z.string(),
+  activity: z.string(),
+  clock: z.string(),
+});
+
+type LogbookDataForm = z.infer<typeof logbookDataFormSchema>;
 
 export function LogbookEditComponent() {
+  const isMounted = useMounted();
+
+  const form = useForm<LogbookDataForm>({
+    resolver: zodResolver(LogbookDataSchema),
+  });
+
   const updateLogbook = trpc.logbook.updateLogbook.useMutation();
   const [respMessage, setRespMessage] = useState<{
     success: boolean;
     message: string;
-  } | null>(null);
-  const [errors, setErrors] = useState<{
-    clock: string;
-    activity: string;
-    description: string;
-  }>({
-    clock: '',
-    activity: '',
-    description: '',
-  });
+  }>();
 
-  const currentLogbook = useLogbookStateStore((state) => state.currentLogbook);
-  const jwt = useLogbookStateStore((state) => state.jwt);
-  const setCurrentLogbook = useLogbookStateStore((state) => state.setCurrentLogbook);
+  const currentLogbook = useLogbookStore((state) => state.currentLogbook);
+  const jwt = useLogbookStore((state) => state.jwt);
+  const setCurrentLogbook = useLogbookStore((state) => state.setCurrentLogbook);
   const [isOffEntry, setIsOffEntry] = useState(false);
+
+  if (!isMounted) return null;
 
   if (!jwt) {
     setCurrentLogbook(null);
@@ -51,61 +72,34 @@ export function LogbookEditComponent() {
     .split(':')
     .map((n) => parseInt(n));
 
-  // const clockIn = new Time(clockInHour, clockInMinute);
-  // const clockOut = new Time(clockOutHour, clockOutMinute);
+  const clockIn = new Time(clockInHour, clockInMinute);
+  const clockOut = new Time(clockOutHour, clockOutMinute);
 
   const dateFilled = parse(currentLogbook.dateFilled, 'yyyy-MM-dd', new Date());
 
-  // function convertTimeToString(time: TimeValue) {
-  //   return time ? time.toString().slice(0, -3) : '';
-  // }
+  function convertTimeToString(time: TimeValue) {
+    return time ? time.toString().slice(0, -3) : '';
+  }
 
-  async function handleOnSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-
-    if (!currentLogbook) return;
-
-    let isError = false;
-    if (currentLogbook.activity.length <= 1) {
-      setErrors((v) => ({ ...v, activity: 'Activity cannot be empty' }));
-      isError = true;
-    }
-    if (currentLogbook.description.length <= 1) {
-      setErrors((v) => ({ ...v, description: 'Description cannot be empty' }));
-      isError = true;
-    }
-    if (currentLogbook.clockIn.length == 0 || currentLogbook.clockOut.length == 0) {
-      setErrors((v) => ({
-        ...v,
-        clock: 'Clock in and clock out cannot be empty',
-      }));
-      isError = true;
-    }
-
-    if (isError) return;
-
-    setErrors({ activity: '', clock: '', description: '' });
-
-    if (isOffEntry) {
-      setCurrentLogbook({
-        ...currentLogbook,
-        activity: 'OFF',
-        description: 'OFF',
-        clockIn: 'OFF',
-        clockOut: 'OFF',
-      });
-    }
-
-    const resp = await updateLogbook.mutateAsync({
-      jwt,
-      logbookData: currentLogbook,
-    });
-
-    setCurrentLogbook(null);
-    setRespMessage({
-      success: resp.success,
-      message: resp.data,
-    });
+  async function handleOnSubmit(values: LogbookDataForm) {
+    // if (isOffEntry) {
+    //   setCurrentLogbook({
+    //     ...currentLogbook,
+    //     activity: 'OFF',
+    //     description: 'OFF',
+    //     clockIn: 'OFF',
+    //     clockOut: 'OFF',
+    //   });
+    // }
+    // const resp = await updateLogbook.mutateAsync({
+    //   jwt,
+    //   logbookData: currentLogbook,
+    // });
+    // setCurrentLogbook(null);
+    // setRespMessage({
+    //   success: true,
+    //   message: resp.data,
+    // });
   }
 
   return (
@@ -115,128 +109,114 @@ export function LogbookEditComponent() {
       </CardHeader>
 
       <CardContent>
-        <form onSubmit={handleOnSubmit}>
-          <div className='flex w-[22rem] flex-col gap-4 rounded-xl md:w-[30rem]'>
-            <div className='w-full rounded-t-xl p-4'>
-              <div className='text-lg font-bold'>{format(dateFilled, 'eeee')}</div>
-              <div className='text-lg font-bold'>
-                {format(dateFilled, 'dd MMMM yyyy')}
-              </div>
-              <span className='text-sm'>{currentLogbook.dateFilled}</span>
-            </div>
-            <div className='flex flex-col gap-4 px-4 pb-4'>
-              <div className='flex-start form-control flex'>
-                <Label className='flex cursor-pointer items-center gap-3'>
-                  <Checkbox
-                    onCheckedChange={(e) =>
-                      setIsOffEntry(
-                        typeof e.valueOf() === 'string' ? false : (e.valueOf() as boolean)
-                      )
-                    }
-                  />
-                  Set this log book entry to OFF
-                </Label>
-              </div>
-              <div>
-                <Label htmlFor='activity'>
-                  <div className='font-bold'>Activity</div>
-                </Label>
-                <Textarea
-                  id='activity'
-                  disabled={isOffEntry}
-                  className={`h-24 ${
-                    errors && errors.activity.length > 0 ? 'border-destructive' : ''
-                  }`}
-                  defaultValue={currentLogbook.activity}
-                  onChange={(e) =>
-                    setCurrentLogbook({
-                      ...currentLogbook,
-                      activity: e.target.value,
-                    })
-                  }></Textarea>
-                {errors && errors.activity.length > 0 && (
-                  <Label htmlFor='activity' className='text-destructive'>
-                    {errors.activity}
-                  </Label>
-                )}
-              </div>
-              <div>
-                <Label htmlFor='description' className='font-bold'>
-                  Description
-                </Label>
-                <Textarea
-                  id='description'
-                  disabled={isOffEntry}
-                  className={`textarea-bordered textarea-secondary textarea h-24 ${
-                    errors && errors.description.length > 0 ? 'border-error' : ''
-                  }`}
-                  defaultValue={currentLogbook.description}
-                  onChange={(e) =>
-                    setCurrentLogbook({
-                      ...currentLogbook,
-                      description: e.target.value,
-                    })
-                  }
-                />
-                {errors && errors.description.length > 0 && (
-                  <Label htmlFor='activity' className='text-destructive'>
-                    {errors.description}
-                  </Label>
-                )}
-              </div>
-              <div>
-                <Label
-                  className={`font-bold ${
-                    errors && errors.clock.length > 0 ? 'text-error' : ''
-                  }`}>
-                  Clock in - Clock out
-                </Label>
-                <div className='flex items-center gap-3'>
-                  {/* <TimeField
-                label='clockIn'
-                isDisabled={isOffEntry}
-                defaultValue={clockIn}
-                onChange={(time) =>
-                  setCurrentLogbook({
-                    ...currentLogbook,
-                    clockIn: convertTimeToString(time),
-                  })
-                }
-                locale='en-US'
-                hourCycle={24}
-              />
-              <span>-</span>
-              <TimeField
-                label='clockOut'
-                isDisabled={isOffEntry}
-                defaultValue={clockOut}
-                onChange={(time) =>
-                  setCurrentLogbook({
-                    ...currentLogbook,
-                    clockOut: convertTimeToString(time),
-                  })
-                }
-                locale='en-US'
-                hourCycle={24}
-              /> */}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleOnSubmit)}>
+            <div className='flex w-[22rem] flex-col gap-4 rounded-xl md:w-[30rem]'>
+              <div className='w-full rounded-t-xl p-4'>
+                <div className='text-lg font-bold'>{format(dateFilled, 'eeee')}</div>
+                <div className='text-lg font-bold'>
+                  {format(dateFilled, 'dd MMMM yyyy')}
                 </div>
-                {errors && errors.clock.length > 0 && (
-                  <Label className='label text-destructive'>{errors.clock}</Label>
-                )}
+                <span className='text-sm'>{currentLogbook.dateFilled}</span>
               </div>
-              <Button variant='secondary' className='mt-6 w-full normal-case'>
-                Update
-              </Button>
+
+              <div className='flex flex-col gap-4 px-4 pb-4'>
+                <div className='flex-start form-control flex'>
+                  <Label className='flex cursor-pointer items-center gap-3'>
+                    <Checkbox
+                      onCheckedChange={(e) =>
+                        setIsOffEntry(
+                          typeof e.valueOf() === 'string'
+                            ? false
+                            : (e.valueOf() as boolean)
+                        )
+                      }
+                    />
+                    Set this log book entry to OFF
+                  </Label>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name='activity'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Activity</FormLabel>
+                      <FormControl>
+                        <Textarea disabled={isOffEntry} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='description'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea disabled={isOffEntry} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='clock'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Clock in - Clock out</FormLabel>
+                      <FormControl>
+                        <div className='flex items-center gap-3'>
+                          <TimeField
+                            label='clockIn'
+                            isDisabled={isOffEntry}
+                            defaultValue={clockIn}
+                            onChange={(time) =>
+                              setCurrentLogbook({
+                                ...currentLogbook,
+                                clockIn: convertTimeToString(time),
+                              })
+                            }
+                            locale='en-US'
+                            hourCycle={24}
+                          />
+                          <span>-</span>
+                          <TimeField
+                            label='clockOut'
+                            isDisabled={isOffEntry}
+                            defaultValue={clockOut}
+                            onChange={(time) =>
+                              setCurrentLogbook({
+                                ...currentLogbook,
+                                clockOut: convertTimeToString(time),
+                              })
+                            }
+                            locale='en-US'
+                            hourCycle={24}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button variant='secondary' className='mt-6 w-full normal-case'>
+                  Update
+                </Button>
+              </div>
             </div>
-          </div>
-        </form>
+          </form>
+        </Form>
       </CardContent>
       <CardFooter>
         {respMessage && respMessage.success && (
-          <div className='bg-success text-success-content mt-4 rounded-xl px-4 py-2'>{`Successfully update logbook (${respMessage.message})`}</div>
+          <div className='mt-4 rounded-xl px-4 py-2'>{`Successfully update logbook (${respMessage.message})`}</div>
         )}
         {respMessage && !respMessage.success && (
-          <div className='bg-error text-error-content mt-4 rounded-xl px-4 py-2'>{`Update logbook failed (${respMessage.message})`}</div>
+          <div className='mt-4 rounded-xl bg-destructive px-4 py-2 text-destructive-foreground'>{`Update logbook failed (${respMessage.message})`}</div>
         )}
       </CardFooter>
     </Card>

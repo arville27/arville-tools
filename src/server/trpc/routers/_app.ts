@@ -1,6 +1,6 @@
-import { router } from "../trpc";
-import { logbookRouter } from "./logbook";
-import { lyricsRouter } from "./lyrics";
+import { router } from '../trpc';
+import { logbookRouter } from './logbook';
+import { lyricsRouter } from './lyrics';
 
 export const appRouter = router({
   lyrics: lyricsRouter,

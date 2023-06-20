@@ -1,11 +1,11 @@
-import { format, parse } from 'date-fns';
-import { z } from 'zod';
-import { logbookPerMonth } from '../../server/trpc/routers/logbook';
+import { useMounted } from '@/utils/hooks/useMounted';
+import * as dfs from 'date-fns';
+import { useState } from 'react';
 import { trpc } from '../../utils/trpc';
-import ListBoxComponent from '../Listbox/ListboxComponent';
-import { useListboxStore } from '../Listbox/useListBoxStore';
 import { Card, CardContent, CardHeader } from '../ui/Card';
-import useLogbookStateStore from './useLogbookStore';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '../ui/Select';
+import { Skeleton } from '../ui/Skeleton';
+import { useLogbookStore } from './useLogbookStore';
 
 type DailyCardProps = {
   uid: string;
@@ -14,28 +14,28 @@ type DailyCardProps = {
   activity: string;
   description: string;
   dateFilled: string;
-  onClick: (tabIndex: number) => void;
 };
 
 function LogbookDailyCard(props: DailyCardProps) {
-  const setCurrentLogbook = useLogbookStateStore((state) => state.setCurrentLogbook);
+  const setCurrentLogbook = useLogbookStore((state) => state.setCurrentLogbook);
+  const setActiveTab = useLogbookStore((state) => state.setActiveTab);
 
-  const { clockIn, clockOut, activity, description, onClick } = props;
+  const { clockIn, clockOut, activity, description } = props;
 
-  const dateFilled = parse(props.dateFilled, 'yyyy-MM-dd', new Date());
+  const dateFilled = dfs.parse(props.dateFilled, 'yyyy-MM-dd', new Date());
 
   return (
     <Card
       onClick={() => {
         setCurrentLogbook(props);
-        onClick(2);
+        setActiveTab('logbook-edit');
       }}
       className='flex w-[22rem] cursor-pointer flex-col justify-start rounded-xl text-left md:w-[30rem]'>
       <CardHeader>
         <div className='bg-base-200 flex w-full items-center justify-between rounded-t-xl p-4'>
           <div>
-            <div className='font-bold'>{format(dateFilled, 'eeee')}</div>
-            <div className='font-bold'>{format(dateFilled, 'dd MMMM yyyy')}</div>
+            <div className='font-bold'>{dfs.format(dateFilled, 'eeee')}</div>
+            <div className='font-bold'>{dfs.format(dateFilled, 'dd MMMM yyyy')}</div>
             <span className='text-base-content/80 text-sm'>{props.dateFilled}</span>
           </div>
           <div className='text-accent-content max-w-fit rounded-full bg-accent px-4 py-2 text-sm font-medium'>
@@ -63,41 +63,106 @@ function LogbookDailyCard(props: DailyCardProps) {
   );
 }
 
-type Props = {
-  onDailyLogbookCardClick: (tabIndex: number) => void;
-};
+const MONTH_SELECT_LIST = {
+  '1': {
+    monthIndexBinus: 1,
+    content: 'September 2022',
+  },
+  '2': {
+    monthIndexBinus: 2,
+    content: 'October 2022',
+  },
+  '3': {
+    monthIndexBinus: 3,
+    content: 'November 2022',
+  },
+  '4': {
+    monthIndexBinus: 4,
+    content: 'December 2022',
+  },
+  '0': {
+    monthIndexBinus: 0,
+    content: 'January 2023',
+  },
+} as const;
 
-export function LogbookListComponent({ onDailyLogbookCardClick }: Props) {
-  const jwt = useLogbookStateStore((state) => state.jwt);
-  const setJwt = useLogbookStateStore((state) => state.setJwt);
-  const setCurrentLogbook = useLogbookStateStore((state) => state.setCurrentLogbook);
+export type LogbookMonthIndex = keyof typeof MONTH_SELECT_LIST;
+export type LogbookMonth = (typeof MONTH_SELECT_LIST)[LogbookMonthIndex];
 
-  const selectedMonth = useListboxStore((state) => state.selectedMonth);
+export function LogbookListComponent() {
+  const isMounted = useMounted();
 
-  const logbookData = trpc.logbook.getLogbookData.useQuery(
-    { jwt },
-    { enabled: Boolean(jwt) }
-  );
+  const jwt = useLogbookStore((s) => s.jwt);
+  const setJwt = useLogbookStore((s) => s.setJwt);
+  const setCurrentLogbook = useLogbookStore((s) => s.setCurrentLogbook);
+
+  const [selectedMonth, setSelectedMonth] = useState<LogbookMonth>({
+    monthIndexBinus: 0,
+    content: 'January 2023',
+  });
+
+  const {
+    data: logbookData,
+    isError,
+    error,
+  } = trpc.logbook.getLogbookData.useQuery({ jwt }, { enabled: Boolean(jwt) });
+
+  if (!isMounted) return null;
 
   if (!jwt) {
     setCurrentLogbook(null);
     return <div>No JWT 😭</div>;
   }
 
-  let content = null;
+  if (isError) {
+    setJwt('');
+    return (
+      <div className='rounded-lg bg-destructive px-4 py-2 text-destructive-foreground'>
+        <p className='font-bold'>Error message</p>
+        <p>{error.message}</p>
+      </div>
+    );
+  }
 
-  if (logbookData.data && logbookData.data.success) {
-    content = (
+  if (!logbookData) {
+    return (
       <div className='flex flex-col items-center gap-3'>
-        <ListBoxComponent />
+        <Skeleton className='h-8 w-2/5 rounded-md' />
         <div className='mb-10 flex w-full flex-col gap-3 lg:grid lg:grid-cols-2'>
-          {(
-            logbookData.data.data[selectedMonth.monthIndexBinus] as z.infer<
-              typeof logbookPerMonth
-            >
-          ).log_book_month_details.map((dailyLogbook) => (
+          <Skeleton className='flex h-[20rem] w-[22rem] rounded-xl md:w-[30rem]' />
+          <Skeleton className='flex h-[20rem] w-[22rem] rounded-xl md:w-[30rem]' />
+          <Skeleton className='flex h-[20rem] w-[22rem] rounded-xl md:w-[30rem]' />
+          <Skeleton className='flex h-[20rem] w-[22rem] rounded-xl md:w-[30rem]' />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className='flex flex-col items-center gap-3'>
+      <Select
+        onValueChange={(value) =>
+          setSelectedMonth(MONTH_SELECT_LIST[value as LogbookMonthIndex])
+        }
+        defaultValue={String(selectedMonth.monthIndexBinus)}>
+        <SelectTrigger className='w-2/5 text-lg font-bold'>
+          {selectedMonth.content}
+        </SelectTrigger>
+        <SelectContent>
+          {Object.entries(MONTH_SELECT_LIST).map(([key, value]) => (
+            <SelectItem
+              key={key}
+              className='text-lg'
+              value={String(value.monthIndexBinus)}>
+              {value.content}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <div className='mb-10 flex w-full flex-col gap-3 lg:grid lg:grid-cols-2'>
+        {logbookData.data[selectedMonth.monthIndexBinus].log_book_month_details.map(
+          (dailyLogbook) => (
             <LogbookDailyCard
-              onClick={onDailyLogbookCardClick}
               key={dailyLogbook.uid}
               uid={dailyLogbook.uid}
               activity={dailyLogbook.activity}
@@ -106,19 +171,9 @@ export function LogbookListComponent({ onDailyLogbookCardClick }: Props) {
               dateFilled={dailyLogbook.date_filled}
               description={dailyLogbook.description}
             />
-          ))}
-        </div>
+          )
+        )}
       </div>
-    );
-  } else if (logbookData.data) {
-    setJwt('');
-    content = (
-      <div className='bg-error text-error-content rounded-lg px-4 py-2'>
-        <p className='font-bold'>Error message</p>
-        <p>{logbookData.data.data as string}</p>
-      </div>
-    );
-  }
-
-  return content;
+    </div>
+  );
 }
