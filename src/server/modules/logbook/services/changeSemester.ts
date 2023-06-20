@@ -7,35 +7,30 @@ import { errorSchema } from '../schema/errorSchema';
 import { axiosInstance } from '../utils/axiosInstance';
 import { getHttpStatusName } from '../utils/getHttpStatusName';
 
-export const EnrichmentAuthParameterSchema = z.object({
-  nim: z.string(),
-  password: z.string(),
+export const ChangeSemesterParameterSchema = z.object({
+  semester: z.number().gte(5).lte(6),
+  jwt: z.string(),
 });
 
-export type EnrichmentAuthParameter = z.infer<typeof EnrichmentAuthParameterSchema>;
+export type ChangeSemesterParameter = z.infer<typeof ChangeSemesterParameterSchema>;
 
-const authSuccessSchema = z.object({
-  data: z.object({
-    token: z.string(),
-  }),
+const changeSemesterSuccessSchema = z.object({
+  status: z.number(),
 });
 
-export async function enrichmentAuth({ nim, password }: EnrichmentAuthParameter) {
+export async function changeSemester({ semester, jwt }: ChangeSemesterParameter) {
   try {
-    const response = await axiosInstance.post(
-      ENRICHMENT_ENDPOINT.AUTH,
-      {
-        username: nim,
-        password: password,
-      },
+    const response = await axiosInstance.get(
+      ENRICHMENT_ENDPOINT.CHANGE_SEMESTER(semester),
       {
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${jwt}`,
         },
       }
     );
 
-    const successfulResponse = authSuccessSchema.safeParse(response.data);
+    const successfulResponse = changeSemesterSuccessSchema.safeParse(response.data);
 
     // This check is needed because of binus API beatiful design
     if (!successfulResponse.success) {
@@ -46,7 +41,7 @@ export async function enrichmentAuth({ nim, password }: EnrichmentAuthParameter)
     }
 
     return {
-      accessToken: successfulResponse.data.data.token,
+      binusStatusCode: successfulResponse.data.status,
     };
   } catch (e: unknown) {
     if (e instanceof TRPCError) throw e;
@@ -66,6 +61,6 @@ export async function enrichmentAuth({ nim, password }: EnrichmentAuthParameter)
   }
 }
 
-export const enrichmentAuthProcedure = procedure
-  .input(EnrichmentAuthParameterSchema)
-  .mutation(({ input }) => enrichmentAuth(input));
+export const changeSemesterProcedure = procedure
+  .input(ChangeSemesterParameterSchema)
+  .mutation(({ input }) => changeSemester(input));

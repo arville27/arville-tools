@@ -24,9 +24,8 @@ import {
 import { LogbookDataSchema, useLogbookStore } from './useLogbookStore';
 
 const logbookDataFormSchema = z.object({
-  description: z.string(),
-  activity: z.string(),
-  clock: z.string(),
+  activity: z.string().nonempty('Activity cannot be empty'),
+  description: z.string().nonempty('Description cannot be empty'),
 });
 
 type LogbookDataForm = z.infer<typeof logbookDataFormSchema>;
@@ -35,7 +34,11 @@ export function LogbookEditComponent() {
   const isMounted = useMounted();
 
   const form = useForm<LogbookDataForm>({
-    resolver: zodResolver(LogbookDataSchema),
+    resolver: zodResolver(logbookDataFormSchema),
+    defaultValues: {
+      activity: '',
+      description: '',
+    },
   });
 
   const updateLogbook = trpc.logbook.updateLogbook.useMutation();
@@ -48,6 +51,7 @@ export function LogbookEditComponent() {
   const jwt = useLogbookStore((state) => state.jwt);
   const setCurrentLogbook = useLogbookStore((state) => state.setCurrentLogbook);
   const [isOffEntry, setIsOffEntry] = useState(false);
+  const [clockErrorMsg, setClockErrorMsg] = useState('');
 
   if (!isMounted) return null;
 
@@ -81,16 +85,28 @@ export function LogbookEditComponent() {
     return time ? time.toString().slice(0, -3) : '';
   }
 
-  async function handleOnSubmit(values: LogbookDataForm) {
-    // if (isOffEntry) {
-    //   setCurrentLogbook({
-    //     ...currentLogbook,
-    //     activity: 'OFF',
-    //     description: 'OFF',
-    //     clockIn: 'OFF',
-    //     clockOut: 'OFF',
-    //   });
-    // }
+  function handleOnSubmit(values: LogbookDataForm) {
+    if (!currentLogbook || clockErrorMsg.length > 0) return;
+    console.log(isOffEntry);
+    if (isOffEntry) {
+      setCurrentLogbook({
+        ...currentLogbook,
+        activity: 'OFF',
+        description: 'OFF',
+        clockIn: 'OFF',
+        clockOut: 'OFF',
+      });
+    } else {
+      setCurrentLogbook({
+        ...currentLogbook,
+        activity: values.activity,
+        description: values.description,
+      });
+    }
+    console.log(currentLogbook);
+    if (currentLogbook.clockIn.length == 0 || currentLogbook.clockOut.length == 0) {
+      setClockErrorMsg('Clock in and clock out cannot be empty');
+    }
     // const resp = await updateLogbook.mutateAsync({
     //   jwt,
     //   logbookData: currentLogbook,
@@ -141,7 +157,7 @@ export function LogbookEditComponent() {
                   name='activity'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Activity</FormLabel>
+                      <FormLabel>Activity {field.value}</FormLabel>
                       <FormControl>
                         <Textarea disabled={isOffEntry} {...field} />
                       </FormControl>
@@ -154,7 +170,7 @@ export function LogbookEditComponent() {
                   name='description'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>Description {field.value}</FormLabel>
                       <FormControl>
                         <Textarea disabled={isOffEntry} {...field} />
                       </FormControl>
@@ -162,48 +178,51 @@ export function LogbookEditComponent() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name='clock'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Clock in - Clock out</FormLabel>
-                      <FormControl>
-                        <div className='flex items-center gap-3'>
-                          <TimeField
-                            label='clockIn'
-                            isDisabled={isOffEntry}
-                            defaultValue={clockIn}
-                            onChange={(time) =>
-                              setCurrentLogbook({
-                                ...currentLogbook,
-                                clockIn: convertTimeToString(time),
-                              })
-                            }
-                            locale='en-US'
-                            hourCycle={24}
-                          />
-                          <span>-</span>
-                          <TimeField
-                            label='clockOut'
-                            isDisabled={isOffEntry}
-                            defaultValue={clockOut}
-                            onChange={(time) =>
-                              setCurrentLogbook({
-                                ...currentLogbook,
-                                clockOut: convertTimeToString(time),
-                              })
-                            }
-                            locale='en-US'
-                            hourCycle={24}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button variant='secondary' className='mt-6 w-full normal-case'>
+                <Label>Clock in - Clock out</Label>
+                <div className='flex items-center gap-3'>
+                  <TimeField
+                    label='clockIn'
+                    isDisabled={isOffEntry}
+                    defaultValue={clockIn}
+                    onChange={(time) => {
+                      const timeString = convertTimeToString(time);
+                      if (timeString.length == 0 || currentLogbook.clockOut.length == 0)
+                        setClockErrorMsg('Clock in and clock out cannot be empty');
+                      else setClockErrorMsg('');
+                      setCurrentLogbook({
+                        ...currentLogbook,
+                        clockIn: convertTimeToString(time),
+                      });
+                    }}
+                    locale='en-US'
+                    hourCycle={24}
+                  />
+                  <span>-</span>
+                  <TimeField
+                    label='clockOut'
+                    isDisabled={isOffEntry}
+                    defaultValue={clockOut}
+                    onChange={(time) => {
+                      const timeString = convertTimeToString(time);
+                      if (currentLogbook.clockIn.length == 0 || timeString.length == 0)
+                        setClockErrorMsg('Clock in and clock out cannot be empty');
+                      else setClockErrorMsg('');
+                      setCurrentLogbook({
+                        ...currentLogbook,
+                        clockOut: timeString,
+                      });
+                    }}
+                    locale='en-US'
+                    hourCycle={24}
+                  />
+                </div>
+                {clockErrorMsg.length > 0 && (
+                  <p className='text-sm font-medium text-destructive'>{clockErrorMsg}</p>
+                )}
+                <Button
+                  type='submit'
+                  variant='secondary'
+                  className='mt-6 w-full normal-case'>
                   Update
                 </Button>
               </div>
