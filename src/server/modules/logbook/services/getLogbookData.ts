@@ -6,6 +6,7 @@ import { ENRICHMENT_ENDPOINT } from '../config';
 import { errorSchema } from '../schema/errorSchema';
 import { axiosInstance } from '../utils/axiosInstance';
 import { getHttpStatusName } from '../utils/getHttpStatusName';
+import { changeSemester } from './changeSemester';
 
 export const GetLogbookDataParameterSchema = z.object({ jwt: z.string() });
 export type GetLogbookDataParameter = z.infer<typeof GetLogbookDataParameterSchema>;
@@ -26,6 +27,7 @@ export const logbookPerMonth = z.object({
 });
 
 const logbookSuccessSchema = z.object({
+  status: z.number(),
   data: z.object({
     logbookMonth: z.array(logbookPerMonth),
   }),
@@ -42,7 +44,11 @@ export async function getLogbookData({ jwt }: GetLogbookDataParameter) {
     const successfulResponse = logbookSuccessSchema.safeParse(response.data);
 
     // This check is needed because of binus API beatiful API design
-    if (!successfulResponse.success) {
+    if (
+      !successfulResponse.success ||
+      successfulResponse.data.status < 200 ||
+      successfulResponse.data.status > 300
+    ) {
       throw new TRPCError({
         message: JSON.stringify(response.data.message),
         code: getHttpStatusName(response.data.status ?? response.status),
@@ -72,4 +78,14 @@ export async function getLogbookData({ jwt }: GetLogbookDataParameter) {
 
 export const getLogbookDataProcedure = procedure
   .input(GetLogbookDataParameterSchema)
-  .query(({ input }) => getLogbookData(input));
+  .query(async ({ input }) => {
+    const changeSemesterResp = await changeSemester({ semester: 6, jwt: input.jwt });
+    if (changeSemesterResp.binusStatusCode !== 200) {
+      throw new TRPCError({
+        message: 'Internal Server Error',
+        code: 'INTERNAL_SERVER_ERROR',
+      });
+    }
+
+    return getLogbookData(input);
+  });

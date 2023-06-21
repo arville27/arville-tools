@@ -15,6 +15,7 @@ export const EnrichmentAuthParameterSchema = z.object({
 export type EnrichmentAuthParameter = z.infer<typeof EnrichmentAuthParameterSchema>;
 
 const authSuccessSchema = z.object({
+  status: z.number(),
   data: z.object({
     token: z.string(),
   }),
@@ -38,7 +39,11 @@ export async function enrichmentAuth({ nim, password }: EnrichmentAuthParameter)
     const successfulResponse = authSuccessSchema.safeParse(response.data);
 
     // This check is needed because of binus API beatiful design
-    if (!successfulResponse.success) {
+    if (
+      !successfulResponse.success ||
+      successfulResponse.data.status < 200 ||
+      successfulResponse.data.status > 300
+    ) {
       throw new TRPCError({
         message: JSON.stringify(response.data.message),
         code: getHttpStatusName(response.data.status ?? response.status),

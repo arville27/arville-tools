@@ -13,8 +13,8 @@ export const UpdateLogbookParameterSchema = z.object({
     activity: z.string().min(1),
     description: z.string().min(1),
     uid: z.string(),
-    clockIn: z.string().min(3),
-    clockOut: z.string().min(3),
+    clock_in: z.string().min(3),
+    clock_out: z.string().min(3),
     dateFilled: z.string(),
   }),
 });
@@ -39,7 +39,11 @@ export async function updateLogbook({ jwt, logbookData }: UpdateLogbookParameter
     const successfulResponse = successfulUpdateResponseSchema.safeParse(response.data);
 
     // This check is needed because of binus API beatiful API design
-    if (!successfulResponse.success) {
+    if (
+      !successfulResponse.success ||
+      successfulResponse.data.status < 200 ||
+      successfulResponse.data.status > 300
+    ) {
       throw new TRPCError({
         message: JSON.stringify(response.data.message),
         code: getHttpStatusName(response.data.status ?? response.status),

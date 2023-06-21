@@ -33,7 +33,11 @@ export async function changeSemester({ semester, jwt }: ChangeSemesterParameter)
     const successfulResponse = changeSemesterSuccessSchema.safeParse(response.data);
 
     // This check is needed because of binus API beatiful design
-    if (!successfulResponse.success) {
+    if (
+      !successfulResponse.success ||
+      successfulResponse.data.status < 200 ||
+      successfulResponse.data.status > 300
+    ) {
       throw new TRPCError({
         message: JSON.stringify(response.data.message),
         code: getHttpStatusName(response.data.status ?? response.status),

@@ -64,25 +64,9 @@ function LogbookDailyCard(props: DailyCardProps) {
 }
 
 const MONTH_SELECT_LIST = {
-  '1': {
-    monthIndexBinus: 1,
-    content: 'September 2022',
-  },
-  '2': {
-    monthIndexBinus: 2,
-    content: 'October 2022',
-  },
-  '3': {
-    monthIndexBinus: 3,
-    content: 'November 2022',
-  },
-  '4': {
-    monthIndexBinus: 4,
-    content: 'December 2022',
-  },
   '0': {
     monthIndexBinus: 0,
-    content: 'January 2023',
+    content: 'June 2023',
   },
 } as const;
 
@@ -98,7 +82,7 @@ export function LogbookListComponent() {
 
   const [selectedMonth, setSelectedMonth] = useState<LogbookMonth>({
     monthIndexBinus: 0,
-    content: 'January 2023',
+    content: 'June 2023',
   });
 
   const {
@@ -139,21 +123,18 @@ export function LogbookListComponent() {
   }
 
   return (
-    <div className='flex flex-col items-center gap-3'>
+    <div className='flex flex-col items-center gap-3 p-2'>
       <Select
         onValueChange={(value) =>
           setSelectedMonth(MONTH_SELECT_LIST[value as LogbookMonthIndex])
         }
         defaultValue={String(selectedMonth.monthIndexBinus)}>
-        <SelectTrigger className='w-2/5 text-lg font-bold'>
+        <SelectTrigger className='mb-4 max-w-xs font-bold'>
           {selectedMonth.content}
         </SelectTrigger>
         <SelectContent>
           {Object.entries(MONTH_SELECT_LIST).map(([key, value]) => (
-            <SelectItem
-              key={key}
-              className='text-lg'
-              value={String(value.monthIndexBinus)}>
+            <SelectItem key={key} value={String(value.monthIndexBinus)}>
               {value.content}
             </SelectItem>
           ))}

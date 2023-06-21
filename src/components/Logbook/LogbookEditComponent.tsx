@@ -1,8 +1,10 @@
+import { TimeField } from '@/components/TimePicker/TimeField';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Textarea } from '@/components/ui/Textarea';
 import { useMounted } from '@/utils/hooks/useMounted';
+import { trpc } from '@/utils/trpc';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Time } from '@internationalized/date';
 import { Label } from '@radix-ui/react-label';
@@ -11,8 +13,6 @@ import { format, parse } from 'date-fns';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { trpc } from '../../utils/trpc';
-import { TimeField } from '../TimePicker/TimeField';
 import {
   Form,
   FormControl,
@@ -21,7 +21,7 @@ import {
   FormLabel,
   FormMessage,
 } from '../ui/Form';
-import { LogbookDataSchema, useLogbookStore } from './useLogbookStore';
+import { useLogbookStore } from './useLogbookStore';
 
 const logbookDataFormSchema = z.object({
   activity: z.string().nonempty('Activity cannot be empty'),
@@ -33,25 +33,24 @@ type LogbookDataForm = z.infer<typeof logbookDataFormSchema>;
 export function LogbookEditComponent() {
   const isMounted = useMounted();
 
-  const form = useForm<LogbookDataForm>({
-    resolver: zodResolver(logbookDataFormSchema),
-    defaultValues: {
-      activity: '',
-      description: '',
-    },
-  });
-
   const updateLogbook = trpc.logbook.updateLogbook.useMutation();
-  const [respMessage, setRespMessage] = useState<{
-    success: boolean;
-    message: string;
-  }>();
 
+  const [respMessage, setRespMessage] = useState('');
   const currentLogbook = useLogbookStore((state) => state.currentLogbook);
   const jwt = useLogbookStore((state) => state.jwt);
   const setCurrentLogbook = useLogbookStore((state) => state.setCurrentLogbook);
+  const setActiveTab = useLogbookStore((state) => state.setActiveTab);
+
   const [isOffEntry, setIsOffEntry] = useState(false);
   const [clockErrorMsg, setClockErrorMsg] = useState('');
+
+  const form = useForm<LogbookDataForm>({
+    resolver: zodResolver(logbookDataFormSchema),
+    defaultValues: {
+      activity: currentLogbook?.activity,
+      description: currentLogbook?.description,
+    },
+  });
 
   if (!isMounted) return null;
 
@@ -87,46 +86,49 @@ export function LogbookEditComponent() {
 
   function handleOnSubmit(values: LogbookDataForm) {
     if (!currentLogbook || clockErrorMsg.length > 0) return;
-    console.log(isOffEntry);
-    if (isOffEntry) {
-      setCurrentLogbook({
-        ...currentLogbook,
-        activity: 'OFF',
-        description: 'OFF',
-        clockIn: 'OFF',
-        clockOut: 'OFF',
-      });
-    } else {
-      setCurrentLogbook({
-        ...currentLogbook,
-        activity: values.activity,
-        description: values.description,
-      });
-    }
-    console.log(currentLogbook);
+
     if (currentLogbook.clockIn.length == 0 || currentLogbook.clockOut.length == 0) {
       setClockErrorMsg('Clock in and clock out cannot be empty');
+      return;
     }
-    // const resp = await updateLogbook.mutateAsync({
-    //   jwt,
-    //   logbookData: currentLogbook,
-    // });
-    // setCurrentLogbook(null);
-    // setRespMessage({
-    //   success: true,
-    //   message: resp.data,
-    // });
+
+    const logbookData = {
+      ...currentLogbook,
+      activity: isOffEntry ? 'OFF' : values.activity,
+      description: isOffEntry ? 'OFF' : values.description,
+      clock_in: isOffEntry ? 'OFF' : currentLogbook.clockIn,
+      clock_out: isOffEntry ? 'OFF' : currentLogbook.clockOut,
+    };
+
+    updateLogbook.mutate(
+      {
+        jwt,
+        logbookData,
+      },
+      {
+        onSuccess: () => {
+          setActiveTab('logbook-data');
+          setCurrentLogbook(null);
+        },
+        onError: (e) => setRespMessage(e.message),
+      }
+    );
   }
 
   return (
-    <Card>
+    <Card className='max-w-[33rem]'>
       <CardHeader>
         <p className='block text-center text-2xl font-bold'>Edit logbook</p>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className='flex flex-col items-center justify-center'>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleOnSubmit)}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (isOffEntry) handleOnSubmit(form.getValues());
+              else form.handleSubmit(handleOnSubmit)(e);
+            }}>
             <div className='flex w-[22rem] flex-col gap-4 rounded-xl md:w-[30rem]'>
               <div className='w-full rounded-t-xl p-4'>
                 <div className='text-lg font-bold'>{format(dateFilled, 'eeee')}</div>
@@ -140,13 +142,20 @@ export function LogbookEditComponent() {
                 <div className='flex-start form-control flex'>
                   <Label className='flex cursor-pointer items-center gap-3'>
                     <Checkbox
-                      onCheckedChange={(e) =>
-                        setIsOffEntry(
+                      onCheckedChange={(e) => {
+                        const isChecked =
                           typeof e.valueOf() === 'string'
                             ? false
-                            : (e.valueOf() as boolean)
-                        )
-                      }
+                            : (e.valueOf() as boolean);
+                        setIsOffEntry(isChecked);
+                        if (isChecked) {
+                          form.setValue('activity', 'OFF');
+                          form.setValue('description', 'OFF');
+                        } else {
+                          form.setValue('activity', currentLogbook.activity);
+                          form.setValue('description', currentLogbook.description);
+                        }
+                      }}
                     />
                     Set this log book entry to OFF
                   </Label>
@@ -157,9 +166,9 @@ export function LogbookEditComponent() {
                   name='activity'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Activity {field.value}</FormLabel>
+                      <FormLabel>Activity</FormLabel>
                       <FormControl>
-                        <Textarea disabled={isOffEntry} {...field} />
+                        <Textarea {...field} disabled={isOffEntry} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -170,7 +179,7 @@ export function LogbookEditComponent() {
                   name='description'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description {field.value}</FormLabel>
+                      <FormLabel>Description</FormLabel>
                       <FormControl>
                         <Textarea disabled={isOffEntry} {...field} />
                       </FormControl>
@@ -191,7 +200,7 @@ export function LogbookEditComponent() {
                       else setClockErrorMsg('');
                       setCurrentLogbook({
                         ...currentLogbook,
-                        clockIn: convertTimeToString(time),
+                        clockIn: timeString,
                       });
                     }}
                     locale='en-US'
@@ -204,7 +213,7 @@ export function LogbookEditComponent() {
                     defaultValue={clockOut}
                     onChange={(time) => {
                       const timeString = convertTimeToString(time);
-                      if (currentLogbook.clockIn.length == 0 || timeString.length == 0)
+                      if (timeString.length == 0 || currentLogbook.clockIn.length == 0)
                         setClockErrorMsg('Clock in and clock out cannot be empty');
                       else setClockErrorMsg('');
                       setCurrentLogbook({
@@ -231,11 +240,11 @@ export function LogbookEditComponent() {
         </Form>
       </CardContent>
       <CardFooter>
-        {respMessage && respMessage.success && (
-          <div className='mt-4 rounded-xl px-4 py-2'>{`Successfully update logbook (${respMessage.message})`}</div>
-        )}
-        {respMessage && !respMessage.success && (
-          <div className='mt-4 rounded-xl bg-destructive px-4 py-2 text-destructive-foreground'>{`Update logbook failed (${respMessage.message})`}</div>
+        {respMessage.length > 0 && (
+          <div className='mt-4 flex w-[22rem] flex-col rounded-xl bg-destructive px-4 py-2 text-destructive-foreground md:w-[30rem]'>
+            <span>Update logbook failed</span>
+            <span>{respMessage}</span>
+          </div>
         )}
       </CardFooter>
     </Card>
