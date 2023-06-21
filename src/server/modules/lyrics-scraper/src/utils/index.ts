@@ -46,7 +46,7 @@ export class SingletonBrowser {
         args: this.optimizationArgs,
         executablePath:
           process.env.NODE_ENV === 'production' ? 'google-chrome-stable' : undefined,
-        headless: process.env.NODE_ENV === 'production' ? 'new' : false,
+        headless: process.env.NODE_ENV === 'production',
       });
     }
     return this.browserInstance;
