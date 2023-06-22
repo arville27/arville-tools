@@ -57,7 +57,7 @@ export function LogbookAuthComponent() {
   }
 
   return (
-    <Card className='w-[22rem] md:w-[28rem]'>
+    <Card className='mx-auto max-w-[28rem]'>
       <CardHeader>
         <span className='block text-center text-2xl font-bold'>Authentication</span>
       </CardHeader>

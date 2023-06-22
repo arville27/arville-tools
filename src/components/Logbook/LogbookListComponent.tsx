@@ -30,15 +30,15 @@ function LogbookDailyCard(props: DailyCardProps) {
         setCurrentLogbook(props);
         setActiveTab('logbook-edit');
       }}
-      className='flex w-[22rem] cursor-pointer flex-col justify-start rounded-xl text-left md:w-[30rem]'>
-      <CardHeader>
-        <div className='bg-base-200 flex w-full items-center justify-between rounded-t-xl p-4'>
+      className='flex max-w-[30rem] cursor-pointer flex-col justify-start overflow-hidden rounded-xl text-left lg:max-w-[28rem]'>
+      <CardHeader className='border-b'>
+        <div className='flex w-full flex-wrap items-center justify-between gap-4 rounded-t-xl px-4'>
           <div>
-            <div className='font-bold'>{dfs.format(dateFilled, 'eeee')}</div>
-            <div className='font-bold'>{dfs.format(dateFilled, 'dd MMMM yyyy')}</div>
-            <span className='text-base-content/80 text-sm'>{props.dateFilled}</span>
+            <div className='text-lg font-bold'>{dfs.format(dateFilled, 'eeee')}</div>
+            <div className='font-medium'>{dfs.format(dateFilled, 'dd MMMM yyyy')}</div>
+            <span className='text-sm text-muted-foreground'>{props.dateFilled}</span>
           </div>
-          <div className='text-accent-content max-w-fit rounded-full bg-accent px-4 py-2 text-sm font-medium'>
+          <div className='max-w-fit rounded-full bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground'>
             {clockIn.length == 0 && clockOut.length == 0
               ? 'None'
               : `${clockIn} - ${clockOut}`}
@@ -95,7 +95,7 @@ export function LogbookListComponent() {
 
   if (!jwt) {
     setCurrentLogbook(null);
-    return <div>No JWT 😭</div>;
+    return <div className='text-center text-muted-foreground'>No JWT 😭</div>;
   }
 
   if (isError) {
@@ -111,8 +111,8 @@ export function LogbookListComponent() {
   if (!logbookData) {
     return (
       <div className='flex flex-col items-center gap-3'>
-        <Skeleton className='h-8 w-2/5 rounded-md' />
-        <div className='mb-10 flex w-full flex-col gap-3 lg:grid lg:grid-cols-2'>
+        <Skeleton className='h-8 w-72 rounded-md' />
+        <div className='mb-10 flex flex-col gap-3 lg:grid lg:grid-cols-2'>
           <Skeleton className='flex h-[20rem] w-[22rem] rounded-xl md:w-[30rem]' />
           <Skeleton className='flex h-[20rem] w-[22rem] rounded-xl md:w-[30rem]' />
           <Skeleton className='flex h-[20rem] w-[22rem] rounded-xl md:w-[30rem]' />
@@ -140,7 +140,7 @@ export function LogbookListComponent() {
           ))}
         </SelectContent>
       </Select>
-      <div className='mb-10 flex w-full flex-col gap-3 lg:grid lg:grid-cols-2'>
+      <div className='mb-10 grid grid-cols-1 gap-3 lg:grid-cols-2'>
         {logbookData.data[selectedMonth.monthIndexBinus].log_book_month_details.map(
           (dailyLogbook) => (
             <LogbookDailyCard

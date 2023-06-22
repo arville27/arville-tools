@@ -1,5 +1,6 @@
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/Button';
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -14,7 +15,14 @@ export default function Home() {
             accusantium impedit ut modi, vitae iure temporibus alias blanditiis fugit
             deleniti non qui asperiores mollitia delectus pariatur, autem excepturi.
           </p>
-          <Button className='btn-primary btn'>Get Started</Button>
+          <div className='flex justify-center gap-4'>
+            <Button>
+              <Link href='/logbook'>Logbook</Link>
+            </Button>
+            <Button>
+              <Link href='/lyrics'>Lyrics</Link>
+            </Button>
+          </div>
         </div>
       </div>
     </Layout>

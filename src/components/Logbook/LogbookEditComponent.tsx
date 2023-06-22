@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Time } from '@internationalized/date';
 import { Label } from '@radix-ui/react-label';
 import { TimeValue } from '@react-aria/datepicker';
-import { format, parse } from 'date-fns';
+import * as dfs from 'date-fns';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -56,12 +56,12 @@ export function LogbookEditComponent() {
 
   if (!jwt) {
     setCurrentLogbook(null);
-    return <div>No JWT 😭</div>;
+    return <div className='text-center text-muted-foreground'>No JWT 😭</div>;
   }
 
   if (!currentLogbook) {
     return (
-      <div className='text-medium w-[22rem] md:w-[30rem]'>
+      <div className='mx-auto max-w-sm text-center text-muted-foreground'>
         No logbook data, please generate a token then choose a logbook to edit
       </div>
     );
@@ -78,7 +78,7 @@ export function LogbookEditComponent() {
   const clockIn = new Time(clockInHour, clockInMinute);
   const clockOut = new Time(clockOutHour, clockOutMinute);
 
-  const dateFilled = parse(currentLogbook.dateFilled, 'yyyy-MM-dd', new Date());
+  const dateFilled = dfs.parse(currentLogbook.dateFilled, 'yyyy-MM-dd', new Date());
 
   function convertTimeToString(time: TimeValue) {
     return time ? time.toString().slice(0, -3) : '';
@@ -116,12 +116,12 @@ export function LogbookEditComponent() {
   }
 
   return (
-    <Card className='max-w-[33rem]'>
+    <Card className='mx-auto max-w-[33rem]'>
       <CardHeader>
         <p className='block text-center text-2xl font-bold'>Edit logbook</p>
       </CardHeader>
 
-      <CardContent className='flex flex-col items-center justify-center'>
+      <CardContent className='px-4'>
         <Form {...form}>
           <form
             onSubmit={(e) => {
@@ -129,36 +129,36 @@ export function LogbookEditComponent() {
               if (isOffEntry) handleOnSubmit(form.getValues());
               else form.handleSubmit(handleOnSubmit)(e);
             }}>
-            <div className='flex w-[22rem] flex-col gap-4 rounded-xl md:w-[30rem]'>
+            <div className='flex flex-col gap-4 rounded-xl'>
               <div className='w-full rounded-t-xl p-4'>
-                <div className='text-lg font-bold'>{format(dateFilled, 'eeee')}</div>
-                <div className='text-lg font-bold'>
-                  {format(dateFilled, 'dd MMMM yyyy')}
+                <div className='text-lg font-bold'>{dfs.format(dateFilled, 'eeee')}</div>
+                <div className='font-medium'>
+                  {dfs.format(dateFilled, 'dd MMMM yyyy')}
                 </div>
-                <span className='text-sm'>{currentLogbook.dateFilled}</span>
+                <span className='text-sm text-muted-foreground'>
+                  {currentLogbook.dateFilled}
+                </span>
               </div>
 
               <div className='flex flex-col gap-4 px-4 pb-4'>
-                <div className='flex-start form-control flex'>
-                  <Label className='flex cursor-pointer items-center gap-3'>
-                    <Checkbox
-                      onCheckedChange={(e) => {
-                        const isChecked =
-                          typeof e.valueOf() === 'string'
-                            ? false
-                            : (e.valueOf() as boolean);
-                        setIsOffEntry(isChecked);
-                        if (isChecked) {
-                          form.setValue('activity', 'OFF');
-                          form.setValue('description', 'OFF');
-                        } else {
-                          form.setValue('activity', currentLogbook.activity);
-                          form.setValue('description', currentLogbook.description);
-                        }
-                      }}
-                    />
-                    Set this log book entry to OFF
-                  </Label>
+                <div className='flex items-center gap-3'>
+                  <Checkbox
+                    onCheckedChange={(e) => {
+                      const isChecked =
+                        typeof e.valueOf() === 'string'
+                          ? false
+                          : (e.valueOf() as boolean);
+                      setIsOffEntry(isChecked);
+                      if (isChecked) {
+                        form.setValue('activity', 'OFF');
+                        form.setValue('description', 'OFF');
+                      } else {
+                        form.setValue('activity', currentLogbook.activity);
+                        form.setValue('description', currentLogbook.description);
+                      }
+                    }}
+                  />
+                  <Label className='text-sm'>Set this log book entry to OFF</Label>
                 </div>
 
                 <FormField
@@ -241,7 +241,7 @@ export function LogbookEditComponent() {
       </CardContent>
       <CardFooter>
         {respMessage.length > 0 && (
-          <div className='mt-4 flex w-[22rem] flex-col rounded-xl bg-destructive px-4 py-2 text-destructive-foreground md:w-[30rem]'>
+          <div className='mt-4 flex flex-col rounded-xl bg-destructive px-4 py-2 text-destructive-foreground'>
             <span>Update logbook failed</span>
             <span>{respMessage}</span>
           </div>
