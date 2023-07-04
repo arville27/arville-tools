@@ -68,6 +68,22 @@ const MONTH_SELECT_LIST = {
     monthIndexBinus: 0,
     content: 'June 2023',
   },
+  '1': {
+    monthIndexBinus: 1,
+    content: 'July 2023',
+  },
+  '2': {
+    monthIndexBinus: 2,
+    content: 'August 2023',
+  },
+  '3': {
+    monthIndexBinus: 3,
+    content: 'September 2023',
+  },
+  '4': {
+    monthIndexBinus: 4,
+    content: 'October 2023',
+  },
 } as const;
 
 export type LogbookMonthIndex = keyof typeof MONTH_SELECT_LIST;
@@ -81,8 +97,8 @@ export function LogbookListComponent() {
   const setCurrentLogbook = useLogbookStore((s) => s.setCurrentLogbook);
 
   const [selectedMonth, setSelectedMonth] = useState<LogbookMonth>({
-    monthIndexBinus: 0,
-    content: 'June 2023',
+    monthIndexBinus: 1,
+    content: 'July 2023',
   });
 
   const {
@@ -122,6 +138,8 @@ export function LogbookListComponent() {
     );
   }
 
+  const logbookPerMonth = logbookData.data.at(selectedMonth.monthIndexBinus);
+
   return (
     <div className='flex flex-col items-center gap-3 p-2'>
       <Select
@@ -140,9 +158,9 @@ export function LogbookListComponent() {
           ))}
         </SelectContent>
       </Select>
-      <div className='mb-10 grid grid-cols-1 gap-3 lg:grid-cols-2'>
-        {logbookData.data[selectedMonth.monthIndexBinus].log_book_month_details.map(
-          (dailyLogbook) => (
+      {logbookPerMonth ? (
+        <div className='mb-10 grid grid-cols-1 gap-3 lg:grid-cols-2'>
+          {logbookPerMonth.log_book_month_details.map((dailyLogbook) => (
             <LogbookDailyCard
               key={dailyLogbook.uid}
               uid={dailyLogbook.uid}
@@ -152,9 +170,13 @@ export function LogbookListComponent() {
               dateFilled={dailyLogbook.date_filled}
               description={dailyLogbook.description}
             />
-          )
-        )}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className='text-muted-foreground'>
+          This month is currently does not exist
+        </div>
+      )}
     </div>
   );
 }
