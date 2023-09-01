@@ -50,12 +50,20 @@ export async function changeSemester({ semester, jwt }: ChangeSemesterParameter)
   } catch (e: unknown) {
     if (e instanceof TRPCError) throw e;
     if (axios.isAxiosError(e) && e.response) {
-      const errorResponse = errorSchema.parse(e.response.data);
+      const errorResponse = errorSchema.safeParse(e.response.data);
 
-      throw new TRPCError({
-        message: JSON.stringify(errorResponse.message),
-        code: getHttpStatusName(e.response.status),
-      });
+      if (errorResponse.success) {
+        throw new TRPCError({
+          message: JSON.stringify(errorResponse.data.message),
+          code: getHttpStatusName(e.response.status),
+        });
+      } else {
+        console.log(e.response);
+        throw new TRPCError({
+          message: "Check BINUS official site, if it's up then the dev fucked up",
+          code: getHttpStatusName(e.response.status),
+        });
+      }
     }
 
     throw new TRPCError({

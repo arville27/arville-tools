@@ -98,7 +98,7 @@ export function LogbookListComponent() {
 
   const [selectedMonth, setSelectedMonth] = useState<LogbookMonth>({
     monthIndexBinus: 1,
-    content: 'July 2023',
+    content: dfs.format(new Date(), 'MMMM yyyy') as any,
   });
 
   const {
