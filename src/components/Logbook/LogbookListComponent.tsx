@@ -98,7 +98,7 @@ export function LogbookListComponent() {
 
   const today = new Date();
   const [selectedMonth, setSelectedMonth] = useState<LogbookMonth>({
-    monthIndexBinus: Math.max(Math.max(today.getMonth(), 9) - 5, 0) as any,
+    monthIndexBinus: Math.max(Math.min(today.getMonth(), 9) - 5, 0) as any,
     content: dfs.format(today, 'MMMM yyyy') as any,
   });
 
