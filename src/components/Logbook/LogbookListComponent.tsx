@@ -96,9 +96,10 @@ export function LogbookListComponent() {
   const setJwt = useLogbookStore((s) => s.setJwt);
   const setCurrentLogbook = useLogbookStore((s) => s.setCurrentLogbook);
 
+  const today = new Date();
   const [selectedMonth, setSelectedMonth] = useState<LogbookMonth>({
-    monthIndexBinus: 1,
-    content: dfs.format(new Date(), 'MMMM yyyy') as any,
+    monthIndexBinus: Math.max(Math.max(today.getMonth(), 9) - 5, 0) as any,
+    content: dfs.format(today, 'MMMM yyyy') as any,
   });
 
   const {
