@@ -165,11 +165,11 @@ export function LogbookListComponent() {
             <LogbookDailyCard
               key={dailyLogbook.uid}
               uid={dailyLogbook.uid}
-              activity={dailyLogbook.activity}
-              clockIn={dailyLogbook.clock_in}
-              clockOut={dailyLogbook.clock_out}
-              dateFilled={dailyLogbook.date_filled}
-              description={dailyLogbook.description}
+              activity={dailyLogbook.activity ?? ''}
+              clockIn={dailyLogbook.clock_in ?? ''}
+              clockOut={dailyLogbook.clock_out ?? ''}
+              dateFilled={dailyLogbook.date_filled ?? ''}
+              description={dailyLogbook.description ?? ''}
             />
           ))}
         </div>

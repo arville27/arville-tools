@@ -17,11 +17,11 @@ export const logbookPerMonth = z.object({
   log_book_month_details: z.array(
     z.object({
       uid: z.string(),
-      clock_in: z.string(),
-      clock_out: z.string(),
-      activity: z.string(),
-      description: z.string(),
-      date_filled: z.string(),
+      clock_in: z.string().nullable(),
+      clock_out: z.string().nullable(),
+      activity: z.string().nullable(),
+      description: z.string().nullable(),
+      date_filled: z.string().nullable(),
     })
   ),
 });
@@ -76,6 +76,8 @@ export async function getLogbookData({ jwt }: GetLogbookDataParameter) {
         });
       }
     }
+
+    console.log(e);
 
     throw new TRPCError({
       message: 'Internal Server Error',
